@@ -36,7 +36,6 @@ public actor DataActor {
 
   public init(minimumCapacity: Int = 32) {
     queue = Deque(minimumCapacity: minimumCapacity)
-    // queue = []
     numSent = 0
     numBlocking = 0
   }
@@ -44,24 +43,27 @@ public actor DataActor {
 
 extension DataChannel {
 
-  public init(dataActor: DataActor) {
+  // NOTE: The actor data channel conist of two directional actor data channels with crossover send/receive members
+  public static func withDataActor(minimumCapacity: Int = 32) -> (clientChannel: DataChannel, serverChannel: DataChannel) {
+    let clientActor = DataActor(minimumCapacity: minimumCapacity)
+    let serverActor = DataActor(minimumCapacity: minimumCapacity)
+
+    let clientChannel = makeChannel(sender: clientActor, reciever: serverActor)
+    let serverChannel = makeChannel(sender: serverActor, reciever: clientActor)
+
+    return (clientChannel, serverChannel)
+  }
+
+  private static func makeChannel(sender: DataActor, reciever: DataActor, onCancel: (@Sendable () -> Void)? = nil) -> DataChannel {
     let writeHandler = { @Sendable data in
-      await dataActor.send(data)
+      await sender.send(data)
     }
 
-    let dataSequence = DataSequence {
-        await dataActor.recv()
-        // do {
-        //   let d = try await dataActor.recv()
-        //   return d
-        // } catch {
-        //   print("DataChannel socket error: \(error)")
-        //   return nil
-        // }
-
-    } onCancel: { @Sendable () in print("Canceled.") }
+    let dataSequence = DataChannel.DataSequence {
+        await reciever.recv()
+    } onCancel: { onCancel?() }
 
 
-    self.init(writeHandler: writeHandler, dataSequence: dataSequence)
+    return DataChannel(writeHandler: writeHandler, dataSequence: dataSequence)
   }
 }
