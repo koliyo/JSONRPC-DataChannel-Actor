@@ -1,4 +1,5 @@
 import XCTest
+import JSONRPC
 @testable import JSONRPC_DataChannel_Actor
 
 // XCTest Documenation
@@ -14,6 +15,12 @@ final class JSONRPC_DataChannel_ActorTests: XCTestCase {
       let receivedData = await channel.recv()
       return String(data: receivedData, encoding: .utf8)!
     }
+
+    // try await Task.sleep(for: Duration.seconds(0.05))
+    while await channel.numBlocking == 0 {
+      continue
+    }
+
     let msg = "hello"
     await channel.send(msg.data(using: .utf8)!)
     let receivedMsg = await receiveTask.result
@@ -30,5 +37,22 @@ final class JSONRPC_DataChannel_ActorTests: XCTestCase {
     XCTAssertEqual(numReceived, 1)
     XCTAssertEqual(numBlocking, 1)
     XCTAssertEqual(queueCount, 1)
+  }
+
+  func testBidirectionalChannel() async throws {
+    let (clientChannel, serverChannel) = DataChannel.withDataActor()
+    let msg = "hello"
+    try await clientChannel.writeHandler(msg.data(using: .utf8)!)
+    var it = serverChannel.dataSequence.makeAsyncIterator();
+    let receivedData = await it.next()
+    let receivedMsg = String(data: receivedData!, encoding: .utf8)!
+    XCTAssertEqual(msg, receivedMsg)
+
+  }
+
+  func testSimpleRPC() {
+    let (_, serverChannel) = DataChannel.withDataActor()
+    let _ = JSONRPCSession(channel: serverChannel)
+    // TODO...
   }
 }
