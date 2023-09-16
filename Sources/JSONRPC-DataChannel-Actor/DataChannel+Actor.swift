@@ -7,7 +7,7 @@ public actor DataActor {
   var continuation: CheckedContinuation<Data, Never>?
   private(set) var numSent: Int
   public var numReceived: Int { numSent - queue.count }
-  private(set) var numBlocking: Int
+  private(set) var numBlocked: Int
   public var queueCount: Int { queue.count }
 
   public func send(_ data: Data) -> Void {
@@ -27,7 +27,7 @@ public actor DataActor {
       return data
     }
 
-    numBlocking += 1
+    numBlocked += 1
 
     return await withCheckedContinuation {
       continuation = $0
@@ -37,7 +37,7 @@ public actor DataActor {
   public init(minimumCapacity: Int = 32) {
     queue = Deque(minimumCapacity: minimumCapacity)
     numSent = 0
-    numBlocking = 0
+    numBlocked = 0
   }
 }
 

@@ -17,7 +17,7 @@ final class JSONRPC_DataChannel_ActorTests: XCTestCase {
     }
 
     // try await Task.sleep(for: Duration.seconds(0.05))
-    while await channel.numBlocking == 0 {
+    while await channel.numBlocked == 0 {
       continue
     }
 
@@ -30,12 +30,12 @@ final class JSONRPC_DataChannel_ActorTests: XCTestCase {
 
     let numSent = await channel.numSent
     let numReceived = await channel.numReceived
-    let numBlocking = await channel.numBlocking
+    let numBlocked = await channel.numBlocked
     let queueCount = await channel.queueCount
 
     XCTAssertEqual(numSent, 2)
     XCTAssertEqual(numReceived, 1)
-    XCTAssertEqual(numBlocking, 1)
+    XCTAssertEqual(numBlocked, 1)
     XCTAssertEqual(queueCount, 1)
   }
 
